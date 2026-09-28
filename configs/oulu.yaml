@@ -1,1 +1,24 @@
+station:
+  code: OULU
+  name: Oulu Neutron Monitor
 
+  latitude_deg: 65.0544
+  longitude_deg: 25.4681
+  altitude_m: 15.0
+
+  cutoff_rigidity_gv: 0.8
+
+  reference_pressure_mbar: 1000.0
+  barometric_coefficient_percent_per_mbar: 0.74
+
+data:
+  resolution: 60
+
+analysis:
+  reference_method: median
+  harmonic_period_hours: 24.0
+
+output:
+  raw_directory: data/raw
+  processed_directory: data/processed
+  figure_directory: results/figures
