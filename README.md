@@ -177,18 +177,13 @@ The complete planned architecture is:
 For measured count rate \(N(t)\):
 
 $$
-\delta I(t)
-=
-\frac{N(t)-N_0}{N_0}.
+\delta I(t)=\frac{N(t)-N_0}{N_0}.
 $$
 
 The percentage variation is:
 
 $$
-\delta I_{\%}(t)
-=
-100
-\frac{N(t)-N_0}{N_0}.
+\delta{I_{\\%}(t)}=100\times\frac{N(t)-N_0}{N_0}.
 $$
 
 ### First harmonic
@@ -196,41 +191,29 @@ $$
 The first harmonic is represented as
 
 $$
-I(t)
-=
-I_0
-+
-A_1\cos(\omega t-\phi_1).
+I(t)=I_0+A_1\cos(\omega t-\phi_1).
 $$
 
 The Fourier coefficients are
 
 $$
-a_1 =
-\frac{2}{N}
-\sum_i
-x_i\cos(\omega t_i),
+a_1 =\frac{2}{N}\sum_ix_i\cos(\omega t_i),
 $$
 
 $$
-b_1 =
-\frac{2}{N}
-\sum_i
-x_i\sin(\omega t_i).
+b_1 =\frac{2}{N}\sum_ix_i\sin(\omega t_i).
 $$
 
 The amplitude is
 
 $$
-A_1 =
-\sqrt{a_1^2+b_1^2},
+A_1 =\sqrt{a_1^2+b_1^2},
 $$
 
 and the phase is
 
 $$
-\phi_1 =
-\operatorname{atan2}(b_1,a_1).
+\phi_1 =\text{atan}2(b_1,a_1).
 $$
 
 ### Rigidity
@@ -260,9 +243,7 @@ $$
 and
 
 $$
-\frac{d\mathbf p}{dt}
-=
-q\mathbf v\times\mathbf B.
+\frac{d\mathbf p}{dt}=q\mathbf v\times\mathbf B.
 $$
 
 The initial geomagnetic implementation will use IGRF.
