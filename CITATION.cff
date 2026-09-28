@@ -1,1 +1,25 @@
+cff-version: 1.2.0
 
+title: "CR-TOMO: Cosmic-Ray Anisotropy, Geomagnetic Backtracing and Heliospheric Tomography"
+
+message: "If you use this software, please cite this repository."
+
+type: software
+
+authors:
+  - family-names: Johnson
+    given-names: Rindhuja Treesa
+
+version: 0.1.0
+
+date-released: 2026-09-28
+
+abstract: >
+  CR-TOMO is an open-source research framework for investigating
+  cosmic-ray variability and anisotropy using neutron-monitor
+  observations, with planned extensions toward geomagnetic
+  particle backtracing and heliospheric tomography.
+
+repository-code: "https://github.com/Rindhujatreesa/cosmic-ray-anisotropy-geomagnetic-backtracing-and-heliospheric-tomography"
+
+license: MIT
