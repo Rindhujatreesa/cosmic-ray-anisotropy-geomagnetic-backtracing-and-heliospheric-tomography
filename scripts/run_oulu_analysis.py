@@ -73,12 +73,15 @@ def main():
     print(f"End        : {args.end}")
     print(f"Resolution : {resolution} min")
 
+    from datetime import datetime, timedelta
     start = datetime.fromisoformat(
         args.start
     )
 
-    end = datetime.fromisoformat(
-        args.end
+    end = (
+        datetime.fromisoformat(args.end)
+        + timedelta(days=1)
+        - timedelta(minutes=1)
     )
 
     print("\nDownloading NMDB data...")
