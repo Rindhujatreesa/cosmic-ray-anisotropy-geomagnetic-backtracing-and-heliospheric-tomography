@@ -17,7 +17,7 @@ class NMDBRequest:
     resolution: int = 60
 
     # NMDB data product
-    tabchoice: str = "revori"
+    tabchoice: str = "1h"
     dtype: str = "corr_for_efficiency"
 
     # 0 = counts/s
@@ -134,58 +134,68 @@ def _is_data_line(line: str) -> bool:
     return True
 
 
+
 def parse_nmdb_ascii(text: str) -> pd.DataFrame:
     """
-    Parse an NMDB ASCII response.
+    Parse an NMDB response into a DataFrame with columns:
+        timestamp
+        count_rate
 
-    The parser accepts whitespace-separated rows
-    containing:
+    Supports:
+    - Whitespace-separated ASCII rows:
+      YYYY-MM-DD HH:MM:SS value
+    - Semicolon-separated NMDB rows:
+      YYYY-MM-DD HH:MM:SS;value
+    - HTML-wrapped responses containing timestamp/value records.
 
-        YYYY-MM-DD HH:MM:SS value
-
-    and tolerates additional metadata columns.
+    Additional metadata columns and non-data lines are ignored.
     """
+    import re
+    from html import unescape
+
+    # NMDB may return HTML containing data, or an HTML error page.
+    # Remove scripts/styles and tags before parsing, but retain the
+    # original response for diagnostic messages.
+    parse_text = text
+
+    if "<html" in text.lower() or "<!doctype html" in text.lower():
+        parse_text = re.sub(
+            r"(?is)<(script|style)\b[^>]*>.*?</\1>",
+            " ",
+            text,
+        )
+        parse_text = unescape(
+            re.sub(r"<[^>]+>", "\n", parse_text)
+        )
 
     rows = []
 
-    for line in text.splitlines():
+    # Match a timestamp followed by a numeric value, allowing either
+    # whitespace or a semicolon between the timestamp and value.
+    # This also handles adjacent records when HTML formatting removes
+    # the newline between them.
+    record_pattern = re.compile(
+        r"(?P<timestamp>\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})"
+        r"\s*[;,\s]\s*"
+        r"(?P<value>[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][+-]?\d+)?)"
+    )
 
-        if not _is_data_line(line):
-            continue
-
-        parts = line.strip().replace(
-            ",", " "
-        ).split()
-
-        if len(parts) < 3:
-            continue
-
-        timestamp_text = (
-            f"{parts[0]} {parts[1]}"
-        )
+    for match in record_pattern.finditer(parse_text):
+        timestamp_text = match.group("timestamp")
+        value_text = match.group("value")
 
         try:
             timestamp = pd.to_datetime(
                 timestamp_text,
+                format="%Y-%m-%d %H:%M:%S",
                 utc=True,
+                errors="raise",
             )
-        except Exception:
+            value = float(value_text)
+        except (ValueError, TypeError, OverflowError):
             continue
 
-        # NMDB ASCII output may contain additional
-        # fields. Find the first numeric value after
-        # the timestamp.
-        value = None
-
-        for token in parts[2:]:
-
-            try:
-                value = float(token)
-                break
-            except ValueError:
-                continue
-
-        if value is None:
+        if not pd.notna(timestamp):
             continue
 
         rows.append(
@@ -196,11 +206,38 @@ def parse_nmdb_ascii(text: str) -> pd.DataFrame:
         )
 
     if not rows:
-        # Preserve the server response to make debugging
-        # much easier.
-        preview = "\n".join(
-            text.splitlines()[:30]
-        )
+        # Produce a useful diagnostic for HTML error pages.
+        if "<html" in text.lower() or "<!doctype html" in text.lower():
+            visible = re.sub(
+                r"(?is)<(script|style)\b[^>]*>.*?</\1>",
+                " ",
+                text,
+            )
+            visible = unescape(
+                re.sub(r"<[^>]+>", " ", visible)
+            )
+            visible = re.sub(r"\s+", " ", visible).strip()
+
+            title_match = re.search(
+                r"(?is)<title\b[^>]*>(.*?)</title>",
+                text,
+            )
+            title = (
+                unescape(
+                    re.sub(r"<[^>]+>", " ", title_match.group(1))
+                ).strip()
+                if title_match
+                else "(no page title)"
+            )
+
+            raise ValueError(
+                "NMDB returned HTML without parseable measurement records.\n"
+                f"Page title: {title}\n"
+                f"Visible response start: {visible[:1500]}\n"
+                f"Visible response end: {visible[-1500:]}"
+            )
+
+        preview = "\n".join(text.splitlines()[:30])
 
         raise ValueError(
             "Could not parse NMDB data.\n\n"
@@ -213,26 +250,21 @@ def parse_nmdb_ascii(text: str) -> pd.DataFrame:
     df["timestamp"] = pd.to_datetime(
         df["timestamp"],
         utc=True,
+        errors="coerce",
     )
-
     df["count_rate"] = pd.to_numeric(
         df["count_rate"],
         errors="coerce",
     )
 
     df = df.dropna(
-        subset=[
-            "timestamp",
-            "count_rate",
-        ]
+        subset=["timestamp", "count_rate"]
     )
 
-    df = df.sort_values(
-        "timestamp"
-    )
-
+    df = df.sort_values("timestamp")
     df = df.drop_duplicates(
-        subset=["timestamp"]
+        subset=["timestamp"],
+        keep="last",
     )
 
     return df.reset_index(drop=True)
